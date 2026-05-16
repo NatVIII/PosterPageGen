@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poster Back-Page Generator</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f2f4f8;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      max-width: 560px;
+      width: 100%;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.4rem;
+    }
+    .instructions {
+      color: #555;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-bottom: 0.3rem;
+    }
+    .form-group label .optional {
+      font-weight: 400;
+      color: #888;
+    }
+    .form-group input[type="text"],
+    .form-group input[type="file"] {
+      width: 100%;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-group input[type="text"]:focus,
+    .form-group input[type="file"]:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+    .form-group input[type="file"] {
+      padding: 0.4rem 0.7rem;
+    }
+    .section-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #777;
+      margin: 1.2rem 0 0.6rem;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 0.3rem;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 0.7rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1.5rem;
+    }
+    .btn:hover {
+      background: #1d4ed8;
+    }
+    .btn:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+    }
+    .btn:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    #status {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #333;
+      min-height: 1.4em;
+    }
+    #status.error {
+      color: #b91c1c;
+    }
+    #status.success {
+      color: #15803d;
+    }
+    #status.loading {
+      color: #555;
+    }
+    #status.loading::after {
+      content: "";
+      display: inline-block;
+      width: 0.7em;
+      height: 0.7em;
+      margin-left: 0.4em;
+      border: 2px solid #94a3b8;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .bug-toggle {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .bug-toggle label {
+      font-weight: 400;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      cursor: pointer;
+    }
+    .bug-toggle input[type="radio"] {
+      cursor: pointer;
+    }
+    .bug-input-group {
+      display: none;
+    }
+    .bug-input-group.active {
+      display: block;
+    }
+    .bug-preview {
+      margin-top: 0.5rem;
+      max-width: 120px;
+      max-height: 60px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      display: none;
+    }
+    .bug-preview.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Poster Back-Page Generator</h1>
+    <p class="instructions">
+      Upload a poster PDF and fill in the fields below. A new PDF will be created
+      with the original poster page(s) plus a back page containing your text
+      and a barcode based on the ID.
+    </p>
+
+    <div class="form-group">
+      <label for="posterInput">Poster PDF <span class="optional">(required)</span></label>
+      <input type="file" id="posterInput" accept=".pdf">
+    </div>
+
+    <div class="section-label">Required Fields</div>
+
+    <div class="form-group">
+      <label for="idInput">ID</label>
+      <input type="text" id="idInput">
+    </div>
+    <div class="form-group">
+      <label for="sourceInput">Source</label>
+      <input type="text" id="sourceInput">
+    </div>
+    <div class="form-group">
+      <label for="categoryInput">Category</label>
+      <input type="text" id="categoryInput">
+    </div>
+    <div class="form-group">
+      <label for="lengthInput">Length (11x17)</label>
+      <input type="text" id="lengthInput">
+    </div>
+
+    <div class="section-label">Optional Fields</div>
+
+    <div class="form-group">
+      <label for="authorInput">Original Author <span class="optional">(optional)</span></label>
+      <input type="text" id="authorInput">
+    </div>
+    <div class="form-group">
+      <label for="websiteInput"><i class="fas fa-globe"></i> Website <span class="optional">(optional)</span></label>
+      <input type="text" id="websiteInput">
+    </div>
+    <div class="form-group">
+      <label for="instagramInput"><i class="fab fa-instagram"></i> Instagram <span class="optional">(optional)</span></label>
+      <input type="text" id="instagramInput">
+    </div>
+    <div class="form-group">
+      <label for="blurbInput">WebsiteBlurb <span class="optional">(optional)</span></label>
+      <input type="text" id="blurbInput">
+    </div>
+    <div class="form-group">
+      <label for="sellerInput">Seller <span class="optional">(optional)</span></label>
+      <input type="text" id="sellerInput">
+    </div>
+    <div class="form-group">
+      <label for="quoteInput">SellerQuote <span class="optional">(optional)</span></label>
+      <input type="text" id="quoteInput">
+    </div>
+
+    <div class="section-label">Bug Image <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#888;font-size:0.75rem">(optional)</span></div>
+
+    <div class="bug-toggle">
+      <label><input type="radio" name="bugMode" value="upload"> Upload</label>
+      <label><input type="radio" name="bugMode" value="url" checked> URL</label>
+    </div>
+
+    <div class="form-group bug-input-group" id="bugUploadGroup">
+      <label for="bugFileInput">Upload image <span class="optional">(.png or .svg)</span></label>
+      <input type="file" id="bugFileInput" accept=".png,.svg">
+    </div>
+
+    <div class="form-group bug-input-group active" id="bugUrlGroup">
+      <label for="bugUrlInput">Image URL <span class="optional">(.png or .svg)</span></label>
+      <input type="url" id="bugUrlInput" placeholder="https://example.com/logo.png">
+    </div>
+
+    <img class="bug-preview" id="bugPreview" alt="Bug image preview">
+
+    <button class="btn" id="generateBtn">Generate PDF</button>
+
+    <div id="status"></div>
+
+    <details style="margin-top:1.5rem;font-size:0.8rem;color:#666;cursor:pointer;">
+      <summary style="font-weight:600;">How to auto-fill fields via URL</summary>
+      <p style="margin-top:0.5rem;line-height:1.5;">
+        Append query parameters to the page URL to pre-fill fields automatically.
+        Parameter names match the field labels with no spaces.
+      </p>
+      <code id="shareUrl" style="display:block;background:#f5f5f5;padding:0.5rem;margin-top:0.4rem;border-radius:4px;font-size:0.75rem;word-break:break-all;">
+        (fill in fields above to generate a shareable URL)
+      </code>
+      <p style="margin-top:0.4rem;line-height:1.5;">
+        The URL above updates automatically as you type. Share it to re-create this form
+        (file uploads are not included — only text fields and the Bug image URL).
+        Parameter names match the field labels with no spaces.
+      </p>
+    </details>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bwip-js@4.10.1/dist/bwip-js.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.js"></script>
+  <script>
+    function isAscii(str) {
+      return /^[\x00-\x7F]*$/.test(str);
+    }
+
+    function sanitizeFilename(str) {
+      return str.replace(/[^a-zA-Z0-9_\-]/g, "_").substring(0, 64);
+    }
+
+    function readFileAsArrayBuffer(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Failed to read file: " + file.name));
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    function generateBarcode(idString) {
+      return new Promise((resolve, reject) => {
+        try {
+          const canvas = document.createElement("canvas");
+          bwipjs.toCanvas(canvas, {
+            bcid: "code128",
+            text: idString,
+            scaleX: 2,
+            scaleY: 2,
+            includetext: false,
+            backgroundcolor: "ffffff",
+            padding: 4
+          });
+          canvas.toBlob(async (blob) => {
+            if (!blob) return reject(new Error("Failed to create barcode PNG blob"));
+            const buffer = await blob.arrayBuffer();
+            resolve(buffer);
+          }, "image/png");
+        } catch (err) {
+          reject(new Error("Barcode generation failed: " + err.message));
+        }
+      });
+    }
+
+    function generateQRCode(text) {
+      return new Promise((resolve, reject) => {
+        try {
+          const canvas = document.createElement("canvas");
+          bwipjs.toCanvas(canvas, {
+            bcid: "qrcode",
+            text: text,
+            scaleX: 3,
+            scaleY: 3,
+            backgroundcolor: "ffffff",
+            padding: 4
+          });
+          canvas.toBlob(async (blob) => {
+            if (!blob) return reject(new Error("Failed to create QR code PNG blob"));
+            const buffer = await blob.arrayBuffer();
+            resolve(buffer);
+          }, "image/png");
+        } catch (err) {
+          reject(new Error("QR code generation failed: " + err.message));
+        }
+      });
+    }
+
+    const iconCache = {};
+
+    async function loadFAIcon(fontUrl, unicode, displaySizePt) {
+      const cacheKey = fontUrl + "-" + unicode;
+      if (iconCache[cacheKey]) return iconCache[cacheKey];
+
+      const fontFamily = "fa-" + unicode.toString(16);
+      const font = new FontFace(fontFamily, "url(" + fontUrl + ")");
+      await font.load();
+      document.fonts.add(font);
+
+      const renderScale = 4;
+      const pxSize = Math.ceil(displaySizePt * renderScale);
+      const canvas = document.createElement("canvas");
+      canvas.width = pxSize;
+      canvas.height = pxSize;
+      const ctx = canvas.getContext("2d");
+      ctx.font = pxSize + 'px "' + fontFamily + '"';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#000";
+      ctx.fillText(String.fromCodePoint(unicode), pxSize / 2, pxSize / 2);
+
+      const buffer = await new Promise((resolve, reject) => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) return reject(new Error("Failed to render icon"));
+          resolve(await blob.arrayBuffer());
+        }, "image/png");
+      });
+
+      iconCache[cacheKey] = buffer;
+      return buffer;
+    }
+
+    const FRANCOIS_ONE_URL = "./FrancoisOne-Regular.ttf";
+
+    async function fetchImageFromURL(url) {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error("Failed to fetch image (HTTP " + resp.status + ")");
+      const blob = await resp.blob();
+      const contentType = blob.type;
+      if (!contentType.startsWith("image/")) throw new Error("URL did not return an image (got " + contentType + ")");
+      if (contentType === "image/svg+xml") {
+        return svgToPngBuffer(blob);
+      }
+      return blob.arrayBuffer();
+    }
+
+    function svgToPngBuffer(svgBlob) {
+      return new Promise((resolve, reject) => {
+        const SVG_DPI = 300;
+        const svgSize = 0.69 * SVG_DPI;
+        const img = new Image();
+        const url = URL.createObjectURL(svgBlob);
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = svgSize;
+          canvas.height = svgSize;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, svgSize, svgSize);
+          URL.revokeObjectURL(url);
+          canvas.toBlob(async (pngBlob) => {
+            if (!pngBlob) return reject(new Error("SVG to PNG conversion failed"));
+            resolve(await pngBlob.arrayBuffer());
+          }, "image/png");
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("Failed to load SVG image"));
+        };
+        img.src = url;
+      });
+    }
+
+    async function createPosterWithBackPage(posterBytes, barcodeBytes, qrCodeBytes, bugBytes, globeIconBytes, instagramIconBytes, websiteUrl, websiteBlurb, formData, fields) {
+      const { PDFDocument, StandardFonts, rgb } = PDFLib;
+
+      const srcDoc = await PDFDocument.load(posterBytes);
+      const destDoc = await PDFDocument.create();
+
+      const [firstPage] = await destDoc.copyPages(srcDoc, [0]);
+      destDoc.addPage(firstPage);
+
+      const { width, height } = firstPage.getSize();
+      const backPage = destDoc.addPage([width, height]);
+
+      let francoisFont;
+      try {
+        const resp = await fetch(FRANCOIS_ONE_URL);
+        const fontBytes = new Uint8Array(await resp.arrayBuffer());
+        destDoc.registerFontkit(fontkit);
+        francoisFont = await destDoc.embedFont(fontBytes);
+      } catch {
+        francoisFont = await destDoc.embedFont(StandardFonts.Helvetica);
+      }
+
+      let globeImage = null, instagramImage = null;
+      if (globeIconBytes) {
+        try { globeImage = await destDoc.embedPng(globeIconBytes); } catch {}
+      }
+      if (instagramIconBytes) {
+        try { instagramImage = await destDoc.embedPng(instagramIconBytes); } catch {}
+      }
+
+      // All dimensions are in PDF points (72 per inch).
+      // At 300 DPI, multiply any inch value by 300 for pixel equivalent.
+      const IN = 72;
+
+      const boxSize = 11 * IN;
+      const topInset = 0.25 * IN;
+      const boxX = Math.max(10, (width - boxSize) / 2);
+      const boxY = height - topInset - boxSize;
+      const boxCenter = boxX + boxSize / 2;
+      const contentPad = 0.28 * IN;
+      const lineHeight = 0.25 * IN;
+      const sectionGap = 0.22 * IN;
+      const titleFontSize = 16;
+      const fieldFontSize = 10;
+      const titleGap = 0.39 * IN;
+
+      // ── Bug image: 2"×2" box, centered at top, ratio-locked ──
+      const bugBoxSize = 2 * IN;
+      const bugBoxX = boxCenter - bugBoxSize / 2;
+      const bugBoxY = boxY + boxSize - contentPad - bugBoxSize;
+
+      if (bugBytes) {
+        let bugImage;
+        try {
+          bugImage = await destDoc.embedPng(bugBytes);
+        } catch {
+          bugImage = await destDoc.embedPng(new Uint8Array(bugBytes));
+        }
+        const scale = Math.min(bugBoxSize / bugImage.width, bugBoxSize / bugImage.height);
+        const drawnW = bugImage.width * scale;
+        const drawnH = bugImage.height * scale;
+        const bugDrawX = bugBoxX + (bugBoxSize - drawnW) / 2;
+        const bugDrawY = bugBoxY + (bugBoxSize - drawnH) / 2;
+        backPage.drawImage(bugImage, {
+          x: bugDrawX,
+          y: bugDrawY,
+          width: drawnW,
+          height: drawnH
+        });
+      }
+
+      // ── Text content: starts below bug box ──
+      let y = bugBoxY - sectionGap;
+
+      const emojiCache = {};
+
+      function splitTextRuns(text, pdfFont) {
+        const runs = [];
+        let current = "";
+        let currentEncodable = null;
+        for (const char of text) {
+          let encodable;
+          try { pdfFont.encodeText(char); encodable = true; }
+          catch { encodable = false; }
+          if (currentEncodable === null) {
+            currentEncodable = encodable;
+            current = char;
+          } else if (encodable === currentEncodable) {
+            current += char;
+          } else {
+            runs.push({ text: current, encodable: currentEncodable });
+            current = char;
+            currentEncodable = encodable;
+          }
+        }
+        if (current) runs.push({ text: current, encodable: currentEncodable });
+        return runs;
+      }
+
+      async function renderEmojiAsPNG(text, fontSizePt) {
+        const key = text + "|" + fontSizePt;
+        if (emojiCache[key]) return emojiCache[key];
+        const renderScale = 4;
+        const emojiSizePt = fontSizePt * 1.1;
+        const pxSize = Math.ceil(emojiSizePt * renderScale);
+        const canvas = document.createElement("canvas");
+        canvas.width = pxSize * 2;
+        canvas.height = pxSize * 2;
+        const ctx = canvas.getContext("2d");
+        ctx.font = pxSize + "px sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.fillStyle = "#000";
+        const drawY = canvas.height - 5;
+        ctx.fillText(text, 0, drawY);
+        const metrics = ctx.measureText(text);
+        const ascent = metrics.actualBoundingBoxAscent || pxSize;
+        const actualWidthPx = metrics.width;
+        const actualHeightPx = ascent;
+        const cropCanvas = document.createElement("canvas");
+        cropCanvas.width = Math.ceil(actualWidthPx);
+        cropCanvas.height = Math.ceil(actualHeightPx);
+        const cropCtx = cropCanvas.getContext("2d");
+        cropCtx.drawImage(canvas, 0, drawY - actualHeightPx, actualWidthPx, actualHeightPx, 0, 0, Math.ceil(actualWidthPx), Math.ceil(actualHeightPx));
+        const widthPt = actualWidthPx / renderScale;
+        const heightPt = actualHeightPx / renderScale;
+        const buffer = await new Promise((resolve, reject) => {
+          cropCanvas.toBlob(async (blob) => {
+            if (!blob) return reject(new Error("Failed to render emoji"));
+            resolve(await blob.arrayBuffer());
+          }, "image/png");
+        });
+        const result = { buffer, widthPt, heightPt };
+        emojiCache[key] = result;
+        return result;
+      }
+
+      async function drawCenteredLine(label, value, yPos, iconImage) {
+        let iconOffset = 0;
+        let iconSize = 0;
+        if (iconImage) {
+          iconSize = fieldFontSize + 1;
+          iconOffset = iconSize + 3;
+        }
+        const labelWC = label + ": ";
+        const labelW = francoisFont.widthOfTextAtSize(labelWC, fieldFontSize);
+
+        const valueRuns = splitTextRuns(value, francoisFont);
+        let totalValueW = 0;
+        for (const run of valueRuns) {
+          if (run.encodable) {
+            totalValueW += francoisFont.widthOfTextAtSize(run.text, fieldFontSize);
+          } else {
+            const emoji = await renderEmojiAsPNG(run.text, fieldFontSize);
+            totalValueW += emoji.widthPt + 1;
+          }
+        }
+
+        const totalW = iconOffset + labelW + totalValueW;
+        const startX = boxCenter - totalW / 2;
+        let x = startX + iconOffset;
+
+        if (iconImage) {
+          backPage.drawImage(iconImage, { x: startX, y: yPos - 1, width: iconSize, height: iconSize });
+        }
+
+        backPage.drawText(labelWC, {
+          x: x, y: yPos, size: fieldFontSize, font: francoisFont, color: rgb(0, 0, 0)
+        });
+        x += labelW;
+
+        for (const run of valueRuns) {
+          if (run.encodable) {
+            backPage.drawText(run.text, {
+              x: x, y: yPos, size: fieldFontSize, font: francoisFont, color: rgb(0.133, 0.133, 0.133)
+            });
+            x += francoisFont.widthOfTextAtSize(run.text, fieldFontSize);
+          } else {
+            const emoji = await renderEmojiAsPNG(run.text, fieldFontSize);
+            const img = await destDoc.embedPng(emoji.buffer);
+            backPage.drawImage(img, {
+              x: x, y: yPos, width: emoji.widthPt, height: emoji.heightPt
+            });
+            x += emoji.widthPt + 1;
+          }
+        }
+      }
+
+      async function drawCenteredText(text, yPos, fontSize, pdfFont, color) {
+        const runs = splitTextRuns(text, pdfFont);
+        let totalW = 0;
+        for (const run of runs) {
+          if (run.encodable) {
+            totalW += pdfFont.widthOfTextAtSize(run.text, fontSize);
+          } else {
+            const emoji = await renderEmojiAsPNG(run.text, fontSize);
+            totalW += emoji.widthPt + 1;
+          }
+        }
+        const startX = boxCenter - totalW / 2;
+        let x = startX;
+        for (const run of runs) {
+          if (run.encodable) {
+            backPage.drawText(run.text, {
+              x: x, y: yPos, size: fontSize, font: pdfFont, color: color
+            });
+            x += pdfFont.widthOfTextAtSize(run.text, fontSize);
+          } else {
+            const emoji = await renderEmojiAsPNG(run.text, fontSize);
+            const img = await destDoc.embedPng(emoji.buffer);
+            backPage.drawImage(img, {
+              x: x, y: yPos, width: emoji.widthPt, height: emoji.heightPt
+            });
+            x += emoji.widthPt + 1;
+          }
+        }
+      }
+
+      const sellerField = fields.optional.find(f => f.label === "Seller");
+      const sellerName = (sellerField && sellerField.value.trim()) ? sellerField.value.trim() : "";
+      const quoteField = fields.optional.find(f => f.label === "SellerQuote");
+      const quoteValue = (quoteField && quoteField.value.trim()) ? quoteField.value.trim() : "";
+      if (sellerName) {
+        await drawCenteredText(sellerName, y, titleFontSize, francoisFont, rgb(0, 0, 0));
+        if (quoteValue) {
+          y -= 22;
+          await drawCenteredText('\u201c' + quoteValue + '\u201d', y, 11, francoisFont, rgb(0.4, 0.4, 0.4));
+        }
+      } else if (quoteValue) {
+        await drawCenteredText('\u201c' + quoteValue + '\u201d', y, 11, francoisFont, rgb(0.4, 0.4, 0.4));
+      }
+      y -= titleGap;
+
+      for (const field of fields.required) {
+        await drawCenteredLine(field.label, field.value, y);
+        y -= lineHeight;
+      }
+
+      const optionalNonEmpty = fields.optional.filter(f => f.value && f.value.trim() !== "" && f.label !== "SellerQuote" && f.label !== "Seller" && f.label !== "WebsiteBlurb");
+      if (optionalNonEmpty.length > 0) {
+        y -= sectionGap;
+
+        for (const field of optionalNonEmpty) {
+          let fieldIcon = null;
+          if (field.label === "Website") fieldIcon = globeImage;
+          if (field.label === "Instagram") fieldIcon = instagramImage;
+          await drawCenteredLine(field.label, field.value, y, fieldIcon);
+          y -= lineHeight;
+        }
+      }
+
+      // ── Bottom section: Barcode at fixed position, then above it: Blurb → URL text → QR code ──
+      const barcodeImage = await destDoc.embedPng(barcodeBytes);
+      const barcodeWidth = 2.78 * IN;
+      const barcodeHeight = (barcodeImage.height / barcodeImage.width) * barcodeWidth;
+      const barcodeBottom = 0.5 * IN;
+      const barcodeY = boxY + barcodeBottom;
+
+      backPage.drawImage(barcodeImage, {
+        x: boxCenter - barcodeWidth / 2,
+        y: barcodeY,
+        width: barcodeWidth,
+        height: barcodeHeight
+      });
+
+      let stackY = boxY + barcodeBottom + barcodeHeight + 8;
+
+      if (websiteBlurb && websiteBlurb.trim()) {
+        const bFontSize = 10;
+        await drawCenteredText(websiteBlurb, stackY, bFontSize, francoisFont, rgb(0.133, 0.133, 0.133));
+        stackY += bFontSize + 6;
+      }
+
+      if (websiteUrl) {
+        const uFontSize = 8;
+        await drawCenteredText(websiteUrl, stackY, uFontSize, francoisFont, rgb(0, 0, 0));
+        stackY += uFontSize + 2;
+      }
+
+      if (qrCodeBytes) {
+        const qrImage = await destDoc.embedPng(qrCodeBytes);
+        const qrSize = 1.39 * IN;
+        backPage.drawImage(qrImage, {
+          x: boxCenter - qrSize / 2,
+          y: stackY,
+          width: qrSize,
+          height: qrSize
+        });
+      }
+
+      if (formData) {
+        try {
+          const encoded = btoa(encodeURIComponent(JSON.stringify(formData)));
+          destDoc.setSubject("PPG_DATA:" + encoded);
+          destDoc.setCreator("PosterPageGen");
+        } catch {}
+      }
+
+      return destDoc.save();
+    }
+
+    const fieldMap = [
+      { id: "idInput", label: "ID", group: "required" },
+      { id: "sourceInput", label: "Source", group: "required" },
+      { id: "categoryInput", label: "Category", group: "required" },
+      { id: "lengthInput", label: "Length", group: "required" },
+      { id: "authorInput", label: "Original Author", group: "optional" },
+      { id: "websiteInput", label: "Website", group: "optional" },
+      { id: "instagramInput", label: "Instagram", group: "optional" },
+      { id: "blurbInput", label: "WebsiteBlurb", group: "optional" },
+      { id: "sellerInput", label: "Seller", group: "optional" },
+      { id: "quoteInput", label: "SellerQuote", group: "optional" }
+    ];
+
+    const inputs = {};
+    fieldMap.forEach(f => {
+      inputs[f.id] = document.getElementById(f.id);
+    });
+
+    const statusEl = document.getElementById("status");
+    const generateBtn = document.getElementById("generateBtn");
+    const posterInput = document.getElementById("posterInput");
+
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.className = isError ? "error" : "success";
+      if (isError) statusEl.classList.remove("loading");
+    }
+
+    function getFields() {
+      const required = [];
+      const optional = [];
+      fieldMap.forEach(f => {
+        const val = inputs[f.id].value.trim();
+        if (f.group === "required") {
+          required.push({ label: f.label, value: val });
+        } else {
+          optional.push({ label: f.label, value: val });
+        }
+      });
+      return { required, optional };
+    }
+
+    function parseURLParams() {
+      const params = new URLSearchParams(window.location.search);
+      fieldMap.forEach(f => {
+        const paramKey = f.label.replace(/\s+/g, "");
+        if (params.has(paramKey)) {
+          inputs[f.id].value = params.get(paramKey);
+        }
+      });
+      if (params.has("Bug")) {
+        bugUrlInput.value = params.get("Bug");
+        showBugPreview(bugUrlInput.value);
+      }
+    }
+
+    function generateShareURL() {
+      const params = new URLSearchParams();
+      fieldMap.forEach(f => {
+        const val = inputs[f.id].value.trim();
+        if (val) {
+          const key = f.label.replace(/\s+/g, "");
+          params.set(key, val);
+        }
+      });
+      const bugMode = document.querySelector('input[name="bugMode"]:checked').value;
+      if (bugMode === "url") {
+        const bugUrl = bugUrlInput.value.trim();
+        if (bugUrl) {
+          params.set("Bug", bugUrl);
+        }
+      }
+      const qs = params.toString();
+      const base = window.location.origin === "null" ? window.location.pathname : window.location.origin + window.location.pathname;
+      return qs ? base + "?" + qs : base;
+    }
+
+    const shareUrlEl = document.getElementById("shareUrl");
+
+    function updateShareURL() {
+      shareUrlEl.textContent = generateShareURL();
+    }
+
+    posterInput.addEventListener("change", async () => {
+      const file = posterInput.files[0];
+      if (!file) return;
+      if (!inputs.idInput.value.trim()) {
+        const name = file.name.replace(/\.[^/.]+$/, "");
+        inputs.idInput.value = name;
+      }
+      try {
+        const bytes = await readFileAsArrayBuffer(file);
+        const srcDoc = await PDFLib.PDFDocument.load(bytes);
+        const subject = srcDoc.getSubject();
+        if (subject && subject.startsWith("PPG_DATA:")) {
+          const raw = subject.slice(9);
+          const json = decodeURIComponent(atob(raw));
+          const data = JSON.parse(json);
+          for (const f of fieldMap) {
+            const key = f.label.replace(/\s+/g, "");
+            if (data[key] !== undefined) {
+              inputs[f.id].value = data[key];
+            }
+          }
+          if (data.Bug) {
+            bugUrlInput.value = data.Bug;
+            showBugPreview(data.Bug);
+          }
+          setStatus("Form data imported from uploaded PDF.", false);
+        }
+      } catch {}
+    });
+
+    generateBtn.addEventListener("click", async () => {
+      const posterFile = posterInput.files[0];
+      if (!posterFile) {
+        setStatus("Please select a poster PDF.", true);
+        return;
+      }
+
+      if (posterFile.size === 0) {
+        setStatus("The selected PDF file is empty.", true);
+        return;
+      }
+
+      if (!posterFile.name.toLowerCase().endsWith(".pdf")) {
+        setStatus("Please select a file with a .pdf extension.", true);
+        return;
+      }
+
+      const idVal = inputs.idInput.value.trim();
+      if (!idVal) {
+        setStatus("ID field is required.", true);
+        return;
+      }
+
+      if (!isAscii(idVal)) {
+        setStatus("ID contains non-ASCII characters. Please use only letters, numbers, and basic symbols.", true);
+        return;
+      }
+
+      generateBtn.disabled = true;
+      statusEl.classList.add("loading");
+      setStatus("Reading poster PDF...", false);
+
+      try {
+        let posterBytes;
+        try {
+          posterBytes = await readFileAsArrayBuffer(posterFile);
+        } catch (readErr) {
+          setStatus("Failed to read the poster PDF file.", true);
+          generateBtn.disabled = false;
+          return;
+        }
+
+        setStatus("Generating barcode...", false);
+        let barcodeBytes;
+        try {
+          barcodeBytes = await generateBarcode(idVal);
+        } catch (barcodeErr) {
+          setStatus("Barcode error: " + barcodeErr.message, true);
+          generateBtn.disabled = false;
+          return;
+        }
+
+        let qrCodeBytes = null;
+        const websiteVal = inputs.websiteInput.value.trim();
+        const blurbVal = inputs.blurbInput.value.trim();
+        if (websiteVal) {
+          setStatus("Generating QR code...", false);
+          try {
+            qrCodeBytes = await generateQRCode(websiteVal);
+          } catch (qrErr) {
+            setStatus("Warning: could not generate QR code for the website.", true);
+          }
+        }
+
+        let globeIconBytes = null, instagramIconBytes = null;
+        const FA_SOLID = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.ttf";
+        const FA_BRANDS = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-brands-400.ttf";
+        const instagramVal = inputs.instagramInput.value.trim();
+        if (websiteVal) {
+          try { globeIconBytes = await loadFAIcon(FA_SOLID, 0xf0ac, 10); } catch {}
+        }
+        if (instagramVal) {
+          try { instagramIconBytes = await loadFAIcon(FA_BRANDS, 0xf16d, 10); } catch {}
+        }
+
+        let bugBytes = null;
+        const bugMode = document.querySelector('input[name="bugMode"]:checked').value;
+        if (bugMode === "upload") {
+          const bugFile = document.getElementById("bugFileInput").files[0];
+          if (bugFile) {
+            setStatus("Reading bug image...", false);
+            try {
+              bugBytes = await readFileAsArrayBuffer(bugFile);
+            } catch {
+              setStatus("Warning: could not read bug image.", true);
+            }
+          }
+        } else {
+          const bugUrl = document.getElementById("bugUrlInput").value.trim();
+          if (bugUrl) {
+            setStatus("Fetching bug image...", false);
+            try {
+              bugBytes = await fetchImageFromURL(bugUrl);
+            } catch (fetchErr) {
+              setStatus("Warning: could not fetch bug image (" + fetchErr.message + ").", true);
+            }
+          }
+        }
+
+        setStatus("Creating PDF...", false);
+        const fields = getFields();
+        const formData = {};
+        fieldMap.forEach(f => {
+          const key = f.label.replace(/\s+/g, "");
+          const val = inputs[f.id].value.trim();
+          if (val) formData[key] = val;
+        });
+        if (bugMode === "url") {
+          const bugUrl = bugUrlInput.value.trim();
+          if (bugUrl) formData.Bug = bugUrl;
+        }
+        let pdfBytes;
+        try {
+          pdfBytes = await createPosterWithBackPage(posterBytes, barcodeBytes, qrCodeBytes, bugBytes, globeIconBytes, instagramIconBytes, websiteVal, blurbVal, formData, fields);
+        } catch (pdfErr) {
+          const msg = pdfErr.message.toLowerCase();
+          if (msg.includes("password")) {
+            setStatus("The poster PDF is password-protected and cannot be processed.", true);
+          } else if (msg.includes("parse") || msg.includes("invalid") || msg.includes("corrupt")) {
+            setStatus("Could not read the poster PDF. The file may be corrupt or not a valid PDF.", true);
+          } else {
+            setStatus("PDF creation failed: " + pdfErr.message, true);
+          }
+          generateBtn.disabled = false;
+          return;
+        }
+
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = sanitizeFilename(idVal) + ".pdf";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setStatus("Done! Download started.", false);
+      } catch (err) {
+        setStatus("Error: " + err.message, true);
+      } finally {
+        generateBtn.disabled = false;
+        statusEl.classList.remove("loading");
+      }
+    });
+
+    const bugRadios = document.querySelectorAll('input[name="bugMode"]');
+    const bugUploadGroup = document.getElementById("bugUploadGroup");
+    const bugUrlGroup = document.getElementById("bugUrlGroup");
+    const bugFileInput = document.getElementById("bugFileInput");
+    const bugUrlInput = document.getElementById("bugUrlInput");
+    const bugPreview = document.getElementById("bugPreview");
+
+    bugRadios.forEach(radio => {
+      radio.addEventListener("change", () => {
+        const isUpload = radio.value === "upload";
+        bugUploadGroup.classList.toggle("active", isUpload);
+        bugUrlGroup.classList.toggle("active", !isUpload);
+        if (isUpload) {
+          bugUrlInput.value = "";
+        } else {
+          bugFileInput.value = "";
+        }
+        bugPreview.classList.remove("active");
+        bugPreview.src = "";
+      });
+    });
+
+    function showBugPreview(src) {
+      bugPreview.src = src;
+      bugPreview.classList.add("active");
+    }
+
+    bugFileInput.addEventListener("change", () => {
+      const file = bugFileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => showBugPreview(reader.result);
+        reader.readAsDataURL(file);
+      }
+    });
+
+    bugUrlInput.addEventListener("input", () => {
+      const url = bugUrlInput.value.trim();
+      if (url) {
+        showBugPreview(url);
+      } else {
+        bugPreview.classList.remove("active");
+        bugPreview.src = "";
+      }
+    });
+
+    fieldMap.forEach(f => {
+      inputs[f.id].addEventListener("input", updateShareURL);
+    });
+    bugRadios.forEach(r => r.addEventListener("change", updateShareURL));
+    bugUrlInput.addEventListener("input", updateShareURL);
+
+    parseURLParams();
+    updateShareURL();
+  </script>
+</body>
+</html>

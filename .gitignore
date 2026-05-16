@@ -1,0 +1,6 @@
+PLAN.md
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

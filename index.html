@@ -132,6 +132,34 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0;
+      transform: translateY(1rem);
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    #toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #toast.toast-success { background: #15803d; }
+    #toast.toast-error { background: #b91c1c; }
+    @media (max-width: 480px) {
+      #toast {
+        left: 1rem;
+        right: 1rem;
+        text-align: center;
+      }
+    }
     .bug-toggle {
       display: flex;
       gap: 1rem;
@@ -164,6 +192,18 @@
     }
     .bug-preview.active {
       display: block;
+    }
+    .shortcut-hint {
+      font-size: 0.65rem;
+      color: #999;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 3px;
+      padding: 0.05rem 0.35rem;
+      margin-left: 0.4rem;
+      font-family: inherit;
+      vertical-align: middle;
+      user-select: none;
     }
   </style>
 </head>
@@ -249,6 +289,7 @@
     <button class="btn" id="generateBtn">Generate PDF</button>
 
     <div id="status"></div>
+    <div id="toast"></div>
 
     <details style="margin-top:1.5rem;font-size:0.8rem;color:#666;cursor:pointer;">
       <summary style="font-weight:600;">How to auto-fill fields via URL</summary>
@@ -264,6 +305,24 @@
         (file uploads are not included — only text fields and the Bug image URL).
         Parameter names match the field labels with no spaces.
       </p>
+    </details>
+
+    <details style="margin-top:0.8rem;font-size:0.8rem;color:#666;cursor:pointer;">
+      <summary style="font-weight:600;">Keyboard shortcuts</summary>
+      <div style="margin-top:0.5rem;line-height:1.8;display:grid;grid-template-columns:auto 1fr;gap:0.1rem 1rem;">
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Shift+Enter</kbd><span>Generate PDF</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+1</kbd><span>Focus ID</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+2</kbd><span>Focus Source</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+3</kbd><span>Focus Category</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+4</kbd><span>Focus Length</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+5</kbd><span>Focus Original Author</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+6</kbd><span>Focus Website</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+7</kbd><span>Focus Instagram</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+8</kbd><span>Focus WebsiteBlurb</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+9</kbd><span>Focus Seller</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+0</kbd><span>Focus SellerQuote</span>
+        <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+Shift+F</kbd><span>Open poster PDF</span>
+      </div>
     </details>
   </div>
 
@@ -732,6 +791,17 @@
     const generateBtn = document.getElementById("generateBtn");
     const posterInput = document.getElementById("posterInput");
 
+    let toastTimer = null;
+
+    function showToast(msg, isError) {
+      const el = document.getElementById("toast");
+      if (toastTimer) clearTimeout(toastTimer);
+      el.textContent = msg;
+      el.className = isError ? "toast-error" : "toast-success";
+      el.classList.add("visible");
+      toastTimer = setTimeout(() => el.classList.remove("visible"), 3000);
+    }
+
     function setStatus(msg, isError) {
       statusEl.textContent = msg;
       statusEl.className = isError ? "error" : "success";
@@ -750,6 +820,34 @@
         }
       });
       return { required, optional };
+    }
+
+    function addShortcutBadges() {
+      const digitLabels = ["Ctrl+1", "Ctrl+2", "Ctrl+3", "Ctrl+4", "Ctrl+5", "Ctrl+6", "Ctrl+7", "Ctrl+8", "Ctrl+9", "Ctrl+0"];
+      fieldMap.forEach((f, i) => {
+        const label = document.querySelector(`label[for="${f.id}"]`);
+        if (label) {
+          const badge = document.createElement("kbd");
+          badge.className = "shortcut-hint";
+          badge.textContent = digitLabels[i];
+          label.appendChild(badge);
+        }
+      });
+      const posterLabel = document.querySelector('label[for="posterInput"]');
+      if (posterLabel) {
+        const badge = document.createElement("kbd");
+        badge.className = "shortcut-hint";
+        badge.textContent = "Ctrl+Shift+F";
+        posterLabel.appendChild(badge);
+      }
+      const btn = document.getElementById("generateBtn");
+      if (btn) {
+        const badge = document.createElement("kbd");
+        badge.className = "shortcut-hint";
+        badge.textContent = "Shift+Enter";
+        badge.style.marginLeft = "0.6rem";
+        btn.appendChild(badge);
+      }
     }
 
     function parseURLParams() {
@@ -827,27 +925,32 @@
       const posterFile = posterInput.files[0];
       if (!posterFile) {
         setStatus("Please select a poster PDF.", true);
+        showToast("Please select a poster PDF.", true);
         return;
       }
 
       if (posterFile.size === 0) {
         setStatus("The selected PDF file is empty.", true);
+        showToast("The selected PDF file is empty.", true);
         return;
       }
 
       if (!posterFile.name.toLowerCase().endsWith(".pdf")) {
         setStatus("Please select a file with a .pdf extension.", true);
+        showToast("Please select a file with a .pdf extension.", true);
         return;
       }
 
       const idVal = inputs.idInput.value.trim();
       if (!idVal) {
         setStatus("ID field is required.", true);
+        showToast("ID field is required.", true);
         return;
       }
 
       if (!isAscii(idVal)) {
         setStatus("ID contains non-ASCII characters. Please use only letters, numbers, and basic symbols.", true);
+        showToast("ID must only contain ASCII characters.", true);
         return;
       }
 
@@ -861,6 +964,7 @@
           posterBytes = await readFileAsArrayBuffer(posterFile);
         } catch (readErr) {
           setStatus("Failed to read the poster PDF file.", true);
+          showToast("Failed to read the poster PDF file.", true);
           generateBtn.disabled = false;
           return;
         }
@@ -871,6 +975,7 @@
           barcodeBytes = await generateBarcode(idVal);
         } catch (barcodeErr) {
           setStatus("Barcode error: " + barcodeErr.message, true);
+          showToast("Barcode generation failed.", true);
           generateBtn.disabled = false;
           return;
         }
@@ -941,10 +1046,13 @@
           const msg = pdfErr.message.toLowerCase();
           if (msg.includes("password")) {
             setStatus("The poster PDF is password-protected and cannot be processed.", true);
+            showToast("PDF is password-protected.", true);
           } else if (msg.includes("parse") || msg.includes("invalid") || msg.includes("corrupt")) {
             setStatus("Could not read the poster PDF. The file may be corrupt or not a valid PDF.", true);
+            showToast("Could not read the poster PDF.", true);
           } else {
             setStatus("PDF creation failed: " + pdfErr.message, true);
+            showToast("PDF creation failed.", true);
           }
           generateBtn.disabled = false;
           return;
@@ -961,8 +1069,10 @@
         URL.revokeObjectURL(url);
 
         setStatus("Done! Download started.", false);
+        showToast("PDF generated successfully \u2713", false);
       } catch (err) {
         setStatus("Error: " + err.message, true);
+        showToast("PDF generation failed.", true);
       } finally {
         generateBtn.disabled = false;
         statusEl.classList.remove("loading");
@@ -1021,8 +1131,31 @@
     bugRadios.forEach(r => r.addEventListener("change", updateShareURL));
     bugUrlInput.addEventListener("input", updateShareURL);
 
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+        const digit = parseInt(e.key);
+        if (digit >= 0 && digit <= 9) {
+          e.preventDefault();
+          const idx = digit === 0 ? 9 : digit - 1;
+          if (fieldMap[idx]) {
+            const el = document.getElementById(fieldMap[idx].id);
+            if (el) { el.focus(); el.select(); }
+          }
+        }
+      }
+      if (e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && (e.key === "F" || e.key === "f")) {
+        e.preventDefault();
+        document.getElementById("posterInput").click();
+      }
+      if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && e.key === "Enter") {
+        e.preventDefault();
+        generateBtn.click();
+      }
+    });
+
     parseURLParams();
     updateShareURL();
+    addShortcutBadges();
   </script>
 </body>
 </html>

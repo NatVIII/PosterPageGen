@@ -324,6 +324,21 @@
         <kbd style="background:#eee;padding:0.1rem 0.4rem;border-radius:3px;font-size:0.75rem;">Ctrl+Shift+F</kbd><span>Open poster PDF</span>
       </div>
     </details>
+
+    <details style="margin-top:0.8rem;font-size:0.8rem;color:#666;cursor:pointer;">
+      <summary style="font-weight:600;">Advanced settings</summary>
+      <div style="margin-top:0.5rem;line-height:1.8;">
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.85rem;color:#444;">
+          <input type="checkbox" id="autoCopyToggle">
+          Auto-copy ID to clipboard
+        </label>
+        <span id="idCopiedFlash" style="font-size:0.75rem;color:#15803d;opacity:0;transition:opacity 0.3s;">Copied!</span>
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.85rem;color:#444;">
+          <input type="checkbox" id="overwriteIdToggle" checked>
+          Overwrite existing ID when uploading a PDF
+        </label>
+      </div>
+    </details>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -850,6 +865,37 @@
       }
     }
 
+    let autoCopyEnabled = false;
+    let overwriteEnabled = true;
+    const idCopiedFlash = document.getElementById("idCopiedFlash");
+    const autoCopyToggle = document.getElementById("autoCopyToggle");
+    const overwriteIdToggle = document.getElementById("overwriteIdToggle");
+
+    function loadSettings() {
+      try {
+        autoCopyEnabled = localStorage.getItem("autoCopyId") === "true";
+        autoCopyToggle.checked = autoCopyEnabled;
+        overwriteEnabled = localStorage.getItem("overwriteIdOnUpload") !== "false";
+        overwriteIdToggle.checked = overwriteEnabled;
+      } catch {}
+    }
+
+    function flashCopied() {
+      if (!idCopiedFlash) return;
+      idCopiedFlash.style.opacity = "1";
+      setTimeout(() => { idCopiedFlash.style.opacity = "0"; }, 1200);
+    }
+
+    autoCopyToggle.addEventListener("change", () => {
+      autoCopyEnabled = autoCopyToggle.checked;
+      try { localStorage.setItem("autoCopyId", autoCopyEnabled); } catch {}
+    });
+
+    overwriteIdToggle.addEventListener("change", () => {
+      overwriteEnabled = overwriteIdToggle.checked;
+      try { localStorage.setItem("overwriteIdOnUpload", overwriteEnabled); } catch {}
+    });
+
     function parseURLParams() {
       const params = new URLSearchParams(window.location.search);
       fieldMap.forEach(f => {
@@ -894,9 +940,13 @@
     posterInput.addEventListener("change", async () => {
       const file = posterInput.files[0];
       if (!file) return;
-      if (!inputs.idInput.value.trim()) {
-        const name = file.name.replace(/\.[^/.]+$/, "");
+      const name = file.name.replace(/\.[^/.]+$/, "");
+      if (overwriteEnabled || !inputs.idInput.value.trim()) {
         inputs.idInput.value = name;
+      }
+      if (autoCopyEnabled) {
+        navigator.clipboard.writeText(name).catch(e => console.warn("Clipboard write failed:", e.message));
+        flashCopied();
       }
       try {
         const bytes = await readFileAsArrayBuffer(file);
@@ -1156,6 +1206,7 @@
     parseURLParams();
     updateShareURL();
     addShortcutBadges();
+    loadSettings();
   </script>
 </body>
 </html>
